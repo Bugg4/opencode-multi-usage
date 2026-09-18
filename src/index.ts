@@ -1,10 +1,6 @@
-import type { Plugin as V2Plugin } from "@opencode/plugin"
-import { legacyTui } from "./tui.js"
+import { Plugin } from "@opencode/plugin"
 
-const plugin = {
+export default Plugin.define({
   id: "opencode.multi-usage",
   setup() {},
-  tui: legacyTui,
-} satisfies V2Plugin.Plugin & { tui: typeof legacyTui }
-
-export default plugin
+})

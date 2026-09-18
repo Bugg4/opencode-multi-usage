@@ -68,7 +68,6 @@ export function QuotaRow(props: {
   const hasReset = () =>
     props.resetAt !== null && props.resetAt !== undefined && props.resetAt > Date.now()
   const toggleReset = () => {
-    if (!hasReset()) return
     setResetOpen((value) => !value)
     props.requestRender()
   }
@@ -80,8 +79,8 @@ export function QuotaRow(props: {
       minute: "2-digit",
     })
 
-  const Summary = () => (
-    <>
+  const SummaryText = () => (
+    <text fg={props.theme().text} wrapMode="word">
       {props.label}:{" "}
       <Show
         when={!props.unavailable}
@@ -92,33 +91,29 @@ export function QuotaRow(props: {
           <span style={{ fg: props.theme().warning }}> ({props.status})</span>
         </Show>
       </Show>
-    </>
+    </text>
+  )
+  const SummaryRow = () => (
+    <box flexDirection="row" gap={1}>
+      <text flexShrink={0} fg={props.theme().muted}>
+        •
+      </text>
+      <SummaryText />
+    </box>
   )
 
+  if (!hasReset()) return <SummaryRow />
   return (
     <box>
-      <Show
-        when={hasReset()}
-        fallback={
-          <Row theme={props.theme}>
-            <Summary />
-          </Row>
-        }
-      >
-        <box flexDirection="row" gap={1} onMouseDown={toggleReset}>
-          <text flexShrink={0} fg={props.theme().muted}>
-            {resetOpen() ? "▼" : "▶"}
-          </text>
-          <text fg={props.theme().text} wrapMode="word">
-            <Summary />
-          </text>
-        </box>
-        <Show when={resetOpen()}>
-          <box paddingLeft={2}>
-            <Row theme={props.theme}>Resets: {resetLabel()}</Row>
-          </box>
-        </Show>
-      </Show>
+      <box id={`usage-quota-${props.label}`} flexDirection="row" gap={1} onMouseDown={toggleReset}>
+        <text flexShrink={0} fg={props.theme().muted}>
+          {resetOpen() ? "▼" : "▶"}
+        </text>
+        <SummaryText />
+      </box>
+      <box paddingLeft={2} height={resetOpen() ? "auto" : 0} visible={resetOpen()}>
+        <Row theme={props.theme}>Resets: {resetLabel()}</Row>
+      </box>
     </box>
   )
 }

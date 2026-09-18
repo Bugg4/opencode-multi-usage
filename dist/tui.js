@@ -6,6 +6,7 @@ import { memo as _$memo } from "@opentui/solid";
 import { setProp as _$setProp } from "@opentui/solid";
 import { createElement as _$createElement } from "@opentui/solid";
 import { createComponent as _$createComponent } from "@opentui/solid";
+import { Plugin } from "@opencode/plugin/tui";
 import { createSignal } from "solid-js";
 import { parseRefreshInterval } from "./refresh.js";
 import { parseProviders } from "./options.js";
@@ -110,27 +111,7 @@ const mount = (rawOptions, theme, requestRender, register) => {
     unregister();
   };
 };
-const legacyTui = async (api, options) => {
-  const dispose = mount(options, () => ({
-    text: api.theme.current.text,
-    muted: api.theme.current.textMuted,
-    primary: api.theme.current.primary,
-    error: api.theme.current.error,
-    warning: api.theme.current.warning,
-    success: api.theme.current.success
-  }), () => api.renderer.requestRender(), (render) => {
-    api.slots.register({
-      order: 150,
-      slots: {
-        sidebar_content: render
-      }
-    });
-    return () => {
-    };
-  });
-  api.lifecycle.onDispose(dispose);
-};
-const plugin = {
+const plugin = Plugin.define({
   id: "opencode.multi-usage.tui",
   setup(context) {
     return mount(context.options, () => ({
@@ -145,10 +126,9 @@ const plugin = {
       render
     }));
   }
-};
+});
 var tui_default = plugin;
 export {
-  tui_default as default,
-  legacyTui
+  tui_default as default
 };
 //# sourceMappingURL=tui.js.map

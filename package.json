@@ -43,7 +43,7 @@
     "clean": "rm -rf dist",
     "build": "npm run clean && tsc -p tsconfig.json --emitDeclarationOnly && tsup",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test test/*.test.js",
+    "test": "npm run build && node --conditions=browser --test test/*.test.js",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -51,27 +51,20 @@
     "node": ">=22"
   },
   "peerDependencies": {
-    "@opencode-ai/plugin": ">=1.18.29 <2",
-    "@opencode/plugin": ">=2 <3",
     "@opencode/theme": ">=2 <3",
-    "@opentui/solid": ">=0.2.16 <1",
+    "@opentui/solid": ">=0.5.10 <1",
     "solid-js": ">=1.9.12 <2"
   },
   "peerDependenciesMeta": {
-    "@opencode-ai/plugin": {
-      "optional": true
-    },
-    "@opencode/plugin": {
-      "optional": true
-    },
     "@opencode/theme": {
       "optional": true
     }
   },
+  "dependencies": {
+    "@opencode/plugin": "^2.0.8"
+  },
   "devDependencies": {
-    "@opencode-ai/plugin": "1.18.30",
-    "@opencode/plugin": "^2.0.3",
-    "@opencode/theme": "^2.0.3",
+    "@opencode/theme": "^2.0.8",
     "@opentui/solid": "0.5.11",
     "@types/node": "^24.12.2",
     "esbuild-plugin-solid": "^0.6.0",

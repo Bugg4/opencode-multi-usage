@@ -1,11 +1,9 @@
-import { legacyTui } from "./tui.js";
-const plugin = {
+import { Plugin } from "@opencode/plugin";
+var src_default = Plugin.define({
   id: "opencode.multi-usage",
   setup() {
-  },
-  tui: legacyTui
-};
-var src_default = plugin;
+  }
+});
 export {
   src_default as default
 };

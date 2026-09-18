@@ -65,7 +65,6 @@ function QuotaRow(props) {
   const [resetOpen, setResetOpen] = createSignal(false);
   const hasReset = () => props.resetAt !== null && props.resetAt !== void 0 && props.resetAt > Date.now();
   const toggleReset = () => {
-    if (!hasReset()) return;
     setResetOpen((value) => !value);
     props.requestRender();
   };
@@ -75,133 +74,128 @@ function QuotaRow(props) {
     hour: "2-digit",
     minute: "2-digit"
   });
-  const Summary = () => [_$memo(() => props.label), ":", " ", _$createComponent(Show, {
-    get when() {
-      return !props.unavailable;
-    },
-    get fallback() {
-      return (() => {
-        var _el$11 = _$createElement("span");
-        _$insertNode(_el$11, _$createTextNode(`(unavailable)`));
-        _$effect((_$p) => _$setProp(_el$11, "style", {
-          fg: props.theme().muted
-        }, _$p));
-        return _el$11;
-      })();
-    },
-    get children() {
-      return [(() => {
-        var _el$8 = _$createElement("span"), _el$9 = _$createTextNode(` left`);
-        _$insertNode(_el$8, _el$9);
-        _$insert(_el$8, () => pct(props.remainingPercent), _el$9);
-        _$effect((_$p) => _$setProp(_el$8, "style", {
-          fg: props.theme().primary
-        }, _$p));
-        return _el$8;
-      })(), _$createComponent(Show, {
-        get when() {
-          return props.status;
-        },
-        get children() {
-          var _el$0 = _$createElement("span"), _el$1 = _$createTextNode(` (`), _el$10 = _$createTextNode(`)`);
-          _$insertNode(_el$0, _el$1);
-          _$insertNode(_el$0, _el$10);
-          _$insert(_el$0, () => props.status, _el$10);
-          _$effect((_$p) => _$setProp(_el$0, "style", {
-            fg: props.theme().warning
-          }, _$p));
-          return _el$0;
-        }
-      })];
-    }
-  })];
-  return (() => {
-    var _el$13 = _$createElement("box");
-    _$insert(_el$13, _$createComponent(Show, {
+  const SummaryText = () => (() => {
+    var _el$8 = _$createElement("text"), _el$9 = _$createTextNode(`: `);
+    _$insertNode(_el$8, _el$9);
+    _$setProp(_el$8, "wrapMode", "word");
+    _$insert(_el$8, () => props.label, _el$9);
+    _$insert(_el$8, _$createComponent(Show, {
       get when() {
-        return hasReset();
+        return !props.unavailable;
       },
       get fallback() {
-        return _$createComponent(Row, {
-          get theme() {
-            return props.theme;
-          },
-          get children() {
-            return _$createComponent(Summary, {});
-          }
-        });
+        return (() => {
+          var _el$14 = _$createElement("span");
+          _$insertNode(_el$14, _$createTextNode(`(unavailable)`));
+          _$effect((_$p) => _$setProp(_el$14, "style", {
+            fg: props.theme().muted
+          }, _$p));
+          return _el$14;
+        })();
       },
       get children() {
         return [(() => {
-          var _el$14 = _$createElement("box"), _el$15 = _$createElement("text"), _el$16 = _$createElement("text");
-          _$insertNode(_el$14, _el$15);
-          _$insertNode(_el$14, _el$16);
-          _$setProp(_el$14, "flexDirection", "row");
-          _$setProp(_el$14, "gap", 1);
-          _$setProp(_el$14, "onMouseDown", toggleReset);
-          _$setProp(_el$15, "flexShrink", 0);
-          _$insert(_el$15, () => resetOpen() ? "\u25BC" : "\u25B6");
-          _$setProp(_el$16, "wrapMode", "word");
-          _$insert(_el$16, _$createComponent(Summary, {}));
-          _$effect((_p$) => {
-            var _v$3 = props.theme().muted, _v$4 = props.theme().text;
-            _v$3 !== _p$.e && (_p$.e = _$setProp(_el$15, "fg", _v$3, _p$.e));
-            _v$4 !== _p$.t && (_p$.t = _$setProp(_el$16, "fg", _v$4, _p$.t));
-            return _p$;
-          }, {
-            e: void 0,
-            t: void 0
-          });
-          return _el$14;
+          var _el$1 = _$createElement("span"), _el$10 = _$createTextNode(` left`);
+          _$insertNode(_el$1, _el$10);
+          _$insert(_el$1, () => pct(props.remainingPercent), _el$10);
+          _$effect((_$p) => _$setProp(_el$1, "style", {
+            fg: props.theme().primary
+          }, _$p));
+          return _el$1;
         })(), _$createComponent(Show, {
           get when() {
-            return resetOpen();
+            return props.status;
           },
           get children() {
-            var _el$17 = _$createElement("box");
-            _$setProp(_el$17, "paddingLeft", 2);
-            _$insert(_el$17, _$createComponent(Row, {
-              get theme() {
-                return props.theme;
-              },
-              get children() {
-                return ["Resets: ", _$memo(() => resetLabel())];
-              }
-            }));
-            return _el$17;
+            var _el$11 = _$createElement("span"), _el$12 = _$createTextNode(` (`), _el$13 = _$createTextNode(`)`);
+            _$insertNode(_el$11, _el$12);
+            _$insertNode(_el$11, _el$13);
+            _$insert(_el$11, () => props.status, _el$13);
+            _$effect((_$p) => _$setProp(_el$11, "style", {
+              fg: props.theme().warning
+            }, _$p));
+            return _el$11;
           }
         })];
       }
+    }), null);
+    _$effect((_$p) => _$setProp(_el$8, "fg", props.theme().text, _$p));
+    return _el$8;
+  })();
+  const SummaryRow = () => (() => {
+    var _el$16 = _$createElement("box"), _el$17 = _$createElement("text");
+    _$insertNode(_el$16, _el$17);
+    _$setProp(_el$16, "flexDirection", "row");
+    _$setProp(_el$16, "gap", 1);
+    _$insertNode(_el$17, _$createTextNode(`\u2022`));
+    _$setProp(_el$17, "flexShrink", 0);
+    _$insert(_el$16, _$createComponent(SummaryText, {}), null);
+    _$effect((_$p) => _$setProp(_el$17, "fg", props.theme().muted, _$p));
+    return _el$16;
+  })();
+  if (!hasReset()) return _$createComponent(SummaryRow, {});
+  return (() => {
+    var _el$19 = _$createElement("box"), _el$20 = _$createElement("box"), _el$21 = _$createElement("text"), _el$22 = _$createElement("box");
+    _$insertNode(_el$19, _el$20);
+    _$insertNode(_el$19, _el$22);
+    _$insertNode(_el$20, _el$21);
+    _$setProp(_el$20, "flexDirection", "row");
+    _$setProp(_el$20, "gap", 1);
+    _$setProp(_el$20, "onMouseDown", toggleReset);
+    _$setProp(_el$21, "flexShrink", 0);
+    _$insert(_el$21, () => resetOpen() ? "\u25BC" : "\u25B6");
+    _$insert(_el$20, _$createComponent(SummaryText, {}), null);
+    _$setProp(_el$22, "paddingLeft", 2);
+    _$insert(_el$22, _$createComponent(Row, {
+      get theme() {
+        return props.theme;
+      },
+      get children() {
+        return ["Resets: ", _$memo(() => resetLabel())];
+      }
     }));
-    return _el$13;
+    _$effect((_p$) => {
+      var _v$3 = `usage-quota-${props.label}`, _v$4 = props.theme().muted, _v$5 = resetOpen() ? "auto" : 0, _v$6 = resetOpen();
+      _v$3 !== _p$.e && (_p$.e = _$setProp(_el$20, "id", _v$3, _p$.e));
+      _v$4 !== _p$.t && (_p$.t = _$setProp(_el$21, "fg", _v$4, _p$.t));
+      _v$5 !== _p$.a && (_p$.a = _$setProp(_el$22, "height", _v$5, _p$.a));
+      _v$6 !== _p$.o && (_p$.o = _$setProp(_el$22, "visible", _v$6, _p$.o));
+      return _p$;
+    }, {
+      e: void 0,
+      t: void 0,
+      a: void 0,
+      o: void 0
+    });
+    return _el$19;
   })();
 }
 function Section(props) {
   return (() => {
-    var _el$18 = _$createElement("box"), _el$19 = _$createElement("box"), _el$20 = _$createElement("text"), _el$21 = _$createElement("text"), _el$22 = _$createElement("b");
-    _$insertNode(_el$18, _el$19);
-    _$insertNode(_el$19, _el$20);
-    _$insertNode(_el$19, _el$21);
-    _$setProp(_el$19, "flexDirection", "row");
-    _$setProp(_el$19, "gap", 1);
-    _$insert(_el$20, () => props.open() ? "\u25BC" : "\u25B6");
-    _$insertNode(_el$21, _el$22);
-    _$insert(_el$22, () => props.title);
-    _$insert(_el$21, _$createComponent(Show, {
+    var _el$23 = _$createElement("box"), _el$24 = _$createElement("box"), _el$25 = _$createElement("text"), _el$26 = _$createElement("text"), _el$27 = _$createElement("b");
+    _$insertNode(_el$23, _el$24);
+    _$insertNode(_el$24, _el$25);
+    _$insertNode(_el$24, _el$26);
+    _$setProp(_el$24, "flexDirection", "row");
+    _$setProp(_el$24, "gap", 1);
+    _$insert(_el$25, () => props.open() ? "\u25BC" : "\u25B6");
+    _$insertNode(_el$26, _el$27);
+    _$insert(_el$27, () => props.title);
+    _$insert(_el$26, _$createComponent(Show, {
       get when() {
         return !props.open();
       },
       get children() {
-        var _el$23 = _$createElement("span"), _el$24 = _$createTextNode(` `);
-        _$insertNode(_el$23, _el$24);
-        _$insert(_el$23, () => props.shortSummary(), null);
-        _$effect((_$p) => _$setProp(_el$23, "style", {
+        var _el$28 = _$createElement("span"), _el$29 = _$createTextNode(` `);
+        _$insertNode(_el$28, _el$29);
+        _$insert(_el$28, () => props.shortSummary(), null);
+        _$effect((_$p) => _$setProp(_el$28, "style", {
           fg: props.theme().muted
         }, _$p));
-        return _el$23;
+        return _el$28;
       }
     }), null);
-    _$insert(_el$18, _$createComponent(Show, {
+    _$insert(_el$23, _$createComponent(Show, {
       get when() {
         return props.open();
       },
@@ -212,10 +206,10 @@ function Section(props) {
           },
           get fallback() {
             return (() => {
-              var _el$25 = _$createElement("text");
-              _$insert(_el$25, () => props.loading() ? "Loading usage..." : "Usage unavailable");
-              _$effect((_$p) => _$setProp(_el$25, "fg", props.theme().muted, _$p));
-              return _el$25;
+              var _el$30 = _$createElement("text");
+              _$insert(_el$30, () => props.loading() ? "Loading usage..." : "Usage unavailable");
+              _$effect((_$p) => _$setProp(_el$30, "fg", props.theme().muted, _$p));
+              return _el$30;
             })();
           },
           get children() {
@@ -225,17 +219,17 @@ function Section(props) {
       }
     }), null);
     _$effect((_p$) => {
-      var _v$5 = props.toggleOpen, _v$6 = props.theme().text, _v$7 = props.theme().text;
-      _v$5 !== _p$.e && (_p$.e = _$setProp(_el$19, "onMouseDown", _v$5, _p$.e));
-      _v$6 !== _p$.t && (_p$.t = _$setProp(_el$20, "fg", _v$6, _p$.t));
-      _v$7 !== _p$.a && (_p$.a = _$setProp(_el$21, "fg", _v$7, _p$.a));
+      var _v$7 = props.toggleOpen, _v$8 = props.theme().text, _v$9 = props.theme().text;
+      _v$7 !== _p$.e && (_p$.e = _$setProp(_el$24, "onMouseDown", _v$7, _p$.e));
+      _v$8 !== _p$.t && (_p$.t = _$setProp(_el$25, "fg", _v$8, _p$.t));
+      _v$9 !== _p$.a && (_p$.a = _$setProp(_el$26, "fg", _v$9, _p$.a));
       return _p$;
     }, {
       e: void 0,
       t: void 0,
       a: void 0
     });
-    return _el$18;
+    return _el$23;
   })();
 }
 export {

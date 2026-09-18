@@ -1,7 +1,4 @@
-declare const plugin: {
-    id: string;
-    setup(): void;
-    tui: (api: import("@opencode-ai/plugin/tui").TuiPluginApi, options?: unknown) => Promise<void>;
-};
-export default plugin;
+import { Plugin } from "@opencode/plugin";
+declare const _default: Plugin.Plugin;
+export default _default;
 //# sourceMappingURL=index.d.ts.map

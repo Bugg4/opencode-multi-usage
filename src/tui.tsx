@@ -1,6 +1,5 @@
 /** @jsxImportSource @opentui/solid */
-import type { TuiPluginApi } from "@opencode-ai/plugin/tui"
-import type { Plugin as V2Plugin } from "@opencode/plugin/tui"
+import { Plugin } from "@opencode/plugin/tui"
 import { createSignal, type Accessor, type JSX } from "solid-js"
 import { parseRefreshInterval } from "./refresh.js"
 import { parseProviders, type ProviderId } from "./options.js"
@@ -148,29 +147,9 @@ const mount = (
   }
 }
 
-export const legacyTui = async (api: TuiPluginApi, options?: unknown): Promise<void> => {
-  const dispose = mount(
-    options,
-    () => ({
-      text: api.theme.current.text,
-      muted: api.theme.current.textMuted,
-      primary: api.theme.current.primary,
-      error: api.theme.current.error,
-      warning: api.theme.current.warning,
-      success: api.theme.current.success,
-    }),
-    () => api.renderer.requestRender(),
-    (render) => {
-      api.slots.register({ order: 150, slots: { sidebar_content: render } })
-      return () => {}
-    },
-  )
-  api.lifecycle.onDispose(dispose)
-}
-
-const plugin = {
+const plugin = Plugin.define({
   id: "opencode.multi-usage.tui",
-  setup(context: V2Plugin.Context) {
+  setup(context) {
     return mount(
       context.options,
       () => ({
@@ -185,6 +164,6 @@ const plugin = {
       (render) => context.ui.slot({ append: "sidebar.content", render }),
     )
   },
-} satisfies V2Plugin.Definition
+})
 
 export default plugin
