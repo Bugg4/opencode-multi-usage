@@ -31,6 +31,10 @@ export declare const planInfo: (planId: string | null) => {
 export declare const parseCommandCodeWindow: (value: unknown) => CCWindow | null;
 export declare const commandCodeBaseUrl: () => string;
 export declare const commandCodeHeaders: (key: string) => Record<string, string>;
+export type CommandCodeUsageDependencies = {
+    fetcher?: typeof fetch;
+    authCandidates?: readonly string[];
+};
 export declare const parseCommandCodeUsage: (creditsRaw: unknown, subRaw: unknown, summaryRaw: unknown) => CommandCodeUsage;
-export declare const getCommandCodeUsage: () => Promise<CommandCodeUsage>;
+export declare const getCommandCodeUsage: (dependencies?: CommandCodeUsageDependencies) => Promise<CommandCodeUsage>;
 //# sourceMappingURL=commandcode.d.ts.map

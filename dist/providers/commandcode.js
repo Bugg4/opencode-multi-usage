@@ -54,22 +54,33 @@ const parseCommandCodeWindow = (value) => {
   };
 };
 const readAuth = async () => {
-  const environmentKey = stringOrNull(process.env.COMMANDCODE_API_KEY) ?? stringOrNull(process.env.COMMAND_CODE_API_KEY);
-  if (environmentKey) return environmentKey;
+  const keys = [];
+  const add = (value) => {
+    const key = stringOrNull(value);
+    if (key && !keys.includes(key)) keys.push(key);
+  };
+  add(process.env.COMMANDCODE_USAGE_API_KEY);
+  add(process.env.COMMANDCODE_API_KEY);
+  add(process.env.COMMAND_CODE_API_KEY);
+  add(process.env.CMD_API_KEY);
   try {
-    const data = await readJson(opencodeDataFile("auth.json"));
+    const data = await readJson(path.join(process.env.HOME ?? "", ".commandcode", "auth.json"));
+    if (record(data)) add(data.apiKey);
+  } catch {
+  }
+  try {
+    const data = process.env.OPENCODE_AUTH_CONTENT ? JSON.parse(process.env.OPENCODE_AUTH_CONTENT) : void 0;
     if (record(data) && record(data.commandcode)) {
-      const key = stringOrNull(data.commandcode.key);
-      if (key) return key;
+      add(data.commandcode.key);
     }
   } catch {
   }
   try {
-    const data = await readJson(path.join(process.env.HOME ?? "", ".commandcode", "auth.json"));
-    return record(data) ? stringOrNull(data.apiKey) ?? void 0 : void 0;
+    const data = await readJson(opencodeDataFile("auth.json"));
+    if (record(data) && record(data.commandcode)) add(data.commandcode.key);
   } catch {
-    return void 0;
   }
+  return keys;
 };
 const commandCodeBaseUrl = () => stringOrNull(process.env.COMMANDCODE_API_URL) ?? DEFAULT_BASE_URL;
 const commandCodeHeaders = (key) => ({
@@ -80,14 +91,16 @@ const commandCodeHeaders = (key) => ({
   "x-command-code-version": CC_VERSION,
   "x-cli-environment": "production"
 });
-const fetchJson = async (key, suffix) => {
-  const response = await fetch(`${commandCodeBaseUrl()}${suffix}`, {
+class CommandCodeKeyRejectedError extends Error {
+}
+const fetchJson = async (key, suffix, fetcher) => {
+  const response = await fetcher(`${commandCodeBaseUrl()}${suffix}`, {
     headers: commandCodeHeaders(key),
     signal: AbortSignal.timeout(1e4)
   });
-  if (response.status === 401) {
-    throw new Error(
-      "CommandCode key rejected (401); run `cmd auth login` or reconnect from /connect"
+  if (response.status === 401 || response.status === 403) {
+    throw new CommandCodeKeyRejectedError(
+      `CommandCode usage key rejected (${response.status}); run \`cmd auth login\` or set COMMANDCODE_USAGE_API_KEY`
     );
   }
   if (!response.ok) throw new Error(`Usage request failed (${response.status})`);
@@ -124,23 +137,39 @@ const parseCommandCodeUsage = (creditsRaw, subRaw, summaryRaw) => {
     monthly: parseCommandCodeWindow(windows.monthly)
   };
 };
-const getCommandCodeUsage = async () => {
-  const key = await readAuth();
-  if (!key) throw new Error("Connect CommandCode from /connect first");
-  const whoami = await fetchJson(key, "/alpha/whoami?limits=1");
+const getCommandCodeUsageWithKey = async (key, fetcher) => {
+  const whoami = await fetchJson(key, "/alpha/whoami?limits=1", fetcher);
   const orgId = record(whoami) && record(whoami.org) ? stringOrNull(whoami.org.id) : null;
   const suffix = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
   const [creditsRaw, subRaw] = await Promise.all([
-    fetchJson(key, `/alpha/billing/credits${suffix}`),
-    fetchJson(key, `/alpha/billing/subscriptions${suffix}`)
+    fetchJson(key, `/alpha/billing/credits${suffix}`, fetcher),
+    fetchJson(key, `/alpha/billing/subscriptions${suffix}`, fetcher)
   ]);
   const sub = record(subRaw) && record(subRaw.data) ? subRaw.data : {};
   const since = stringOrNull(sub.currentPeriodStart);
   const summaryRaw = await fetchJson(
     key,
-    `/alpha/usage/summary${suffix ? `${suffix}&` : "?"}${since ? `since=${encodeURIComponent(since)}` : ""}`
+    `/alpha/usage/summary${suffix ? `${suffix}&` : "?"}${since ? `since=${encodeURIComponent(since)}` : ""}`,
+    fetcher
   );
   return parseCommandCodeUsage(creditsRaw, subRaw, summaryRaw);
+};
+const getCommandCodeUsage = async (dependencies = {}) => {
+  const fetcher = dependencies.fetcher ?? fetch;
+  const keys = dependencies.authCandidates ?? await readAuth();
+  if (keys.length === 0) {
+    throw new Error("Run `cmd auth login` or set COMMANDCODE_USAGE_API_KEY first");
+  }
+  let rejected;
+  for (const candidate of keys) {
+    try {
+      return await getCommandCodeUsageWithKey(candidate, fetcher);
+    } catch (error) {
+      if (!(error instanceof CommandCodeKeyRejectedError)) throw error;
+      rejected = error;
+    }
+  }
+  throw rejected ?? new Error("No CommandCode credential can access usage; run `cmd auth login` first");
 };
 export {
   CC_VERSION,

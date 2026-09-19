@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 import { accountIdFromToken, parseCodexUsage } from "../dist/providers/codex.js"
 import { parseGoUsage, parseGoWindow } from "../dist/providers/opencode-go.js"
 import {
+  getCommandCodeUsage,
   parseCommandCodeUsage,
   parseCommandCodeWindow,
   planInfo,
@@ -119,5 +120,44 @@ describe("CommandCode usage", () => {
     assert.equal(usage.plan, null)
     assert.equal(usage.usagePercent, null)
     assert.equal(parseCommandCodeWindow(null), null)
+  })
+
+  it("falls back when a Provider API key cannot access subscription usage", async () => {
+    const credentials = []
+    const fetcher = async (input, init) => {
+      const url = new URL(input)
+      const authorization = new Headers(init?.headers).get("authorization")
+      credentials.push({ path: url.pathname, authorization })
+
+      if (url.pathname === "/alpha/whoami" && authorization === "Bearer provider-key") {
+        return new Response(null, { status: 401 })
+      }
+      if (url.pathname === "/alpha/whoami") {
+        return Response.json({ org: { id: "org-1" } })
+      }
+      if (url.pathname === "/alpha/billing/credits") {
+        return Response.json({ credits: { monthlyCredits: 12 } })
+      }
+      if (url.pathname === "/alpha/billing/subscriptions") {
+        return Response.json({ data: { planId: "individual-pro" } })
+      }
+      if (url.pathname === "/alpha/usage/summary") {
+        return Response.json({ totalCount: 7 })
+      }
+      return new Response(null, { status: 404 })
+    }
+
+    const usage = await getCommandCodeUsage({
+      authCandidates: ["provider-key", "cli-key"],
+      fetcher,
+    })
+
+    assert.equal(usage.plan, "Pro")
+    assert.equal(usage.totalRemaining, 12)
+    assert.deepEqual(credentials.slice(0, 2), [
+      { path: "/alpha/whoami", authorization: "Bearer provider-key" },
+      { path: "/alpha/whoami", authorization: "Bearer cli-key" },
+    ])
+    assert.ok(credentials.slice(2).every(({ authorization }) => authorization === "Bearer cli-key"))
   })
 })
