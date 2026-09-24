@@ -45,7 +45,10 @@ export function GoView(props: UsageViewProps<GoUsage>) {
       open={props.open}
       toggleOpen={props.toggleOpen}
     >
-      <Show when={!props.usage()!.error} fallback={<Empty theme={props.theme} />}>
+      <Show
+        when={!props.usage()!.error}
+        fallback={<Empty message={props.usage()!.error} theme={props.theme} />}
+      >
         <Show
           when={props.usage()!.rolling ?? props.usage()!.weekly ?? props.usage()!.monthly}
           fallback={<Empty theme={props.theme} />}

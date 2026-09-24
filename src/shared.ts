@@ -21,5 +21,10 @@ export const readJson = async (file: string): Promise<unknown> =>
 
 export const opencodeDataFile = (name: string): string => path.join(dataHome(), "opencode", name)
 
-export const errorMessage = (error: unknown): string =>
-  error instanceof Error ? error.message : "Usage request failed"
+export const errorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message
+  if (record(error) && typeof error.message === "string" && error.message.length > 0) {
+    return error.message
+  }
+  return "Usage request failed"
+}

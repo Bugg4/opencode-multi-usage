@@ -5,6 +5,7 @@ export default defineConfig({
   entry: {
     index: "src/index.ts",
     tui: "src/tui.tsx",
+    rpc: "src/rpc.ts",
     options: "src/options.ts",
     refresh: "src/refresh.ts",
     shared: "src/shared.ts",

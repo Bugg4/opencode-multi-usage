@@ -47,7 +47,10 @@ export function CommandCodeView(props: UsageViewProps<CommandCodeUsage>) {
       open={props.open}
       toggleOpen={props.toggleOpen}
     >
-      <Show when={!props.usage()!.error} fallback={<Empty theme={props.theme} />}>
+      <Show
+        when={!props.usage()!.error}
+        fallback={<Empty message={props.usage()!.error} theme={props.theme} />}
+      >
         <PlanRow plan={props.usage()!.plan} theme={props.theme} />
         <Show
           when={props.usage()!.fiveHour ?? props.usage()!.weekly ?? props.usage()!.monthly}

@@ -1,3 +1,5 @@
+import type { Context } from "@opencode/plugin/tui/context"
+import { MultiUsageRpc } from "../rpc.js"
 import {
   opencodeDataFile,
   booleanOrNull,
@@ -24,6 +26,8 @@ export type CodexUsage = {
   secondary: WindowUsage | null
   error?: string
 }
+
+export type TuiClient = Context["client"]
 
 export const emptyCodexUsage = (error: string): CodexUsage => ({
   plan: null,
@@ -78,6 +82,23 @@ export const parseCodexUsage = (value: unknown): CodexUsage => {
   }
 }
 
+export const fetchCodexUsage = async (access: string, accountId?: string): Promise<CodexUsage> => {
+  const headers = new Headers({
+    Authorization: `Bearer ${access}`,
+    Accept: "application/json",
+  })
+  if (accountId) headers.set("ChatGPT-Account-ID", accountId)
+  const response = await fetch(USAGE_URL, {
+    headers,
+    signal: AbortSignal.timeout(10_000),
+  })
+  if (response.status === 401 || response.status === 403) {
+    throw new Error("ChatGPT session expired; reconnect from /connect")
+  }
+  if (!response.ok) throw new Error(`Usage request failed (${response.status})`)
+  return parseCodexUsage(await response.json())
+}
+
 const readAuth = async (): Promise<{ access?: string; accountId?: string }> => {
   const environmentToken = stringOrNull(process.env.CHATGPT_ACCESS_TOKEN)
   if (environmentToken) {
@@ -98,21 +119,23 @@ const readAuth = async (): Promise<{ access?: string; accountId?: string }> => {
   }
 }
 
-export const getCodexUsage = async (): Promise<CodexUsage> => {
+const getLocalCodexUsage = async (): Promise<CodexUsage> => {
   const auth = await readAuth()
   if (!auth.access) throw new Error("Connect ChatGPT from /connect first")
-  const headers = new Headers({
-    Authorization: `Bearer ${auth.access}`,
-    Accept: "application/json",
-  })
-  if (auth.accountId) headers.set("ChatGPT-Account-ID", auth.accountId)
-  const response = await fetch(USAGE_URL, {
-    headers,
-    signal: AbortSignal.timeout(10_000),
-  })
-  if (response.status === 401 || response.status === 403) {
-    throw new Error("ChatGPT session expired; reconnect from /connect")
+  return fetchCodexUsage(auth.access, auth.accountId)
+}
+
+const isRpcMethodError = (error: unknown): boolean =>
+  record(error) && typeof error.type === "string" && !error.type.startsWith("rpc.")
+
+export const getCodexUsage = async (client?: TuiClient): Promise<CodexUsage> => {
+  if (client) {
+    try {
+      return (await client.rpc(MultiUsageRpc).codexUsage({})) as CodexUsage
+    } catch (error) {
+      if (isRpcMethodError(error)) throw error
+      // The server plugin is not loaded; fall back to local credentials.
+    }
   }
-  if (!response.ok) throw new Error(`Usage request failed (${response.status})`)
-  return parseCodexUsage(await response.json())
+  return getLocalCodexUsage()
 }

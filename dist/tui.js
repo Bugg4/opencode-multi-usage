@@ -35,12 +35,12 @@ const providers = {
   commandcode: {
     id: "commandcode",
     defaultRefreshInterval: "5m",
-    getUsage: getCommandCodeUsage,
+    getUsage: () => getCommandCodeUsage(),
     errorUsage: emptyCommandCodeUsage,
     View: CommandCodeView
   }
 };
-const createRuntime = (provider, refreshInterval, theme, requestRender) => {
+const createRuntime = (provider, refreshInterval, theme, requestRender, client) => {
   const interval = parseRefreshInterval(refreshInterval, parseRefreshInterval(provider.defaultRefreshInterval).milliseconds);
   const [usage, setUsage] = createSignal(null);
   const [loading, setLoading] = createSignal(true);
@@ -55,7 +55,7 @@ const createRuntime = (provider, refreshInterval, theme, requestRender) => {
     refreshing = (async () => {
       setLoading(true);
       try {
-        const next = await provider.getUsage();
+        const next = await provider.getUsage(client);
         setUsage(() => next);
       } catch (error) {
         const next = provider.errorUsage(errorMessage(error));
@@ -83,14 +83,14 @@ const createRuntime = (provider, refreshInterval, theme, requestRender) => {
     dispose: () => clearInterval(timer)
   };
 };
-const mount = (rawOptions, theme, requestRender, register) => {
+const mount = (rawOptions, theme, requestRender, register, client) => {
   const options = record(rawOptions) ? rawOptions : {};
   const enabled = parseProviders(options.providers);
   const runtimes = [];
   for (const id of enabled) {
-    if (id === "codex") runtimes.push(createRuntime(providers.codex, options.refreshInterval, theme, requestRender));
-    if (id === "opencode-go") runtimes.push(createRuntime(providers["opencode-go"], options.refreshInterval, theme, requestRender));
-    if (id === "commandcode") runtimes.push(createRuntime(providers.commandcode, options.refreshInterval, theme, requestRender));
+    if (id === "codex") runtimes.push(createRuntime(providers.codex, options.refreshInterval, theme, requestRender, client));
+    if (id === "opencode-go") runtimes.push(createRuntime(providers["opencode-go"], options.refreshInterval, theme, requestRender, client));
+    if (id === "commandcode") runtimes.push(createRuntime(providers.commandcode, options.refreshInterval, theme, requestRender, client));
   }
   const unregister = register(() => (() => {
     var _el$ = _$createElement("box");
@@ -124,7 +124,7 @@ const plugin = Plugin.define({
     }), () => context.renderer.requestRender(), (render) => context.ui.slot({
       append: "sidebar.content",
       render
-    }));
+    }), context.client);
   }
 });
 var tui_default = plugin;

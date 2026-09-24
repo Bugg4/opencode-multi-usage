@@ -6,7 +6,7 @@ import { parseProviders, type ProviderId } from "./options.js"
 import { errorMessage, record } from "./shared.js"
 import type { UsageTheme, UsageViewProps } from "./ui.js"
 import { CodexView } from "./providers/codex-view.js"
-import { emptyCodexUsage, getCodexUsage } from "./providers/codex.js"
+import { emptyCodexUsage, getCodexUsage, type TuiClient } from "./providers/codex.js"
 import { GoView } from "./providers/opencode-go-view.js"
 import { emptyGoUsage, getGoUsage } from "./providers/opencode-go.js"
 import { CommandCodeView } from "./providers/commandcode-view.js"
@@ -17,7 +17,7 @@ type UsageResult = { error?: string }
 type Provider<Usage extends UsageResult> = {
   id: ProviderId
   defaultRefreshInterval: string
-  getUsage: () => Promise<Usage>
+  getUsage: (client?: TuiClient) => Promise<Usage>
   errorUsage: (message: string) => Usage
   View: (props: UsageViewProps<Usage>) => JSX.Element
 }
@@ -45,7 +45,7 @@ const providers = {
   commandcode: {
     id: "commandcode",
     defaultRefreshInterval: "5m",
-    getUsage: getCommandCodeUsage,
+    getUsage: () => getCommandCodeUsage(),
     errorUsage: emptyCommandCodeUsage,
     View: CommandCodeView,
   } satisfies Provider<Awaited<ReturnType<typeof getCommandCodeUsage>>>,
@@ -56,6 +56,7 @@ const createRuntime = <Usage extends UsageResult>(
   refreshInterval: unknown,
   theme: Accessor<UsageTheme>,
   requestRender: () => void,
+  client: TuiClient,
 ): Runtime => {
   const interval = parseRefreshInterval(
     refreshInterval,
@@ -76,7 +77,7 @@ const createRuntime = <Usage extends UsageResult>(
     refreshing = (async () => {
       setLoading(true)
       try {
-        const next = await provider.getUsage()
+        const next = await provider.getUsage(client)
         setUsage(() => next)
       } catch (error) {
         const next = provider.errorUsage(errorMessage(error))
@@ -113,20 +114,29 @@ const mount = (
   theme: Accessor<UsageTheme>,
   requestRender: () => void,
   register: (render: () => JSX.Element) => () => void,
+  client: TuiClient,
 ): (() => void) => {
   const options = record(rawOptions) ? rawOptions : {}
   const enabled = parseProviders(options.providers)
   const runtimes: Runtime[] = []
   for (const id of enabled) {
     if (id === "codex")
-      runtimes.push(createRuntime(providers.codex, options.refreshInterval, theme, requestRender))
+      runtimes.push(
+        createRuntime(providers.codex, options.refreshInterval, theme, requestRender, client),
+      )
     if (id === "opencode-go")
       runtimes.push(
-        createRuntime(providers["opencode-go"], options.refreshInterval, theme, requestRender),
+        createRuntime(
+          providers["opencode-go"],
+          options.refreshInterval,
+          theme,
+          requestRender,
+          client,
+        ),
       )
     if (id === "commandcode")
       runtimes.push(
-        createRuntime(providers.commandcode, options.refreshInterval, theme, requestRender),
+        createRuntime(providers.commandcode, options.refreshInterval, theme, requestRender, client),
       )
   }
 
@@ -162,6 +172,7 @@ const plugin = Plugin.define({
       }),
       () => context.renderer.requestRender(),
       (render) => context.ui.slot({ append: "sidebar.content", render }),
+      context.client,
     )
   },
 })

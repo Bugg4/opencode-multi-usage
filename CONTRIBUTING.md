@@ -34,6 +34,11 @@ Auth and fetch conventions:
 - Providers are opt-in. Make no network requests unless the provider is enabled.
 - Check credentials in this order: dedicated env var(s) first, then OpenCode's
   `auth.json` / `account.json` entry, then the vendor CLI auth file if one exists.
+- OAuth-based providers should prefer the live credential from OpenCode V2's
+  integration API through the server plugin RPC (see `src/index.ts` and
+  `src/rpc.ts`) and fall back to env vars / local auth files only when the RPC is
+  unavailable. OpenCode V2 refreshes integration credentials in its own store,
+  not in `auth.json`.
 - If no credential is found, `throw new Error("Connect <Name> from /connect first")`
   (or a similarly actionable message).
 - Use `AbortSignal.timeout(10_000)` for requests.

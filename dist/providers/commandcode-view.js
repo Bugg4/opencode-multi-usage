@@ -70,6 +70,9 @@ function CommandCodeView(props) {
         },
         get fallback() {
           return _$createComponent(Empty, {
+            get message() {
+              return props.usage().error;
+            },
             get theme() {
               return props.theme;
             }

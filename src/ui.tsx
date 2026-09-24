@@ -39,10 +39,10 @@ export function Row(props: { theme: Accessor<UsageTheme>; children: JSX.Element 
   )
 }
 
-export function Empty(props: { theme: Accessor<UsageTheme> }) {
+export function Empty(props: { message?: string; theme: Accessor<UsageTheme> }) {
   return (
     <Row theme={props.theme}>
-      <span style={{ fg: props.theme().muted }}>(unavailable)</span>
+      <span style={{ fg: props.theme().muted }}>{props.message ?? "(unavailable)"}</span>
     </Row>
   )
 }

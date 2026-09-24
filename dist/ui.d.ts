@@ -26,6 +26,7 @@ export declare function Row(props: {
     children: JSX.Element;
 }): JSX.Element;
 export declare function Empty(props: {
+    message?: string;
     theme: Accessor<UsageTheme>;
 }): JSX.Element;
 export declare function PlanRow(props: {

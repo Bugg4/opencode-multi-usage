@@ -1,3 +1,4 @@
+import { MultiUsageRpc } from "../rpc.js";
 import {
   opencodeDataFile,
   booleanOrNull,
@@ -54,6 +55,22 @@ const parseCodexUsage = (value) => {
     secondary: parseWindow(rateLimit.secondary_window)
   };
 };
+const fetchCodexUsage = async (access, accountId) => {
+  const headers = new Headers({
+    Authorization: `Bearer ${access}`,
+    Accept: "application/json"
+  });
+  if (accountId) headers.set("ChatGPT-Account-ID", accountId);
+  const response = await fetch(USAGE_URL, {
+    headers,
+    signal: AbortSignal.timeout(1e4)
+  });
+  if (response.status === 401 || response.status === 403) {
+    throw new Error("ChatGPT session expired; reconnect from /connect");
+  }
+  if (!response.ok) throw new Error(`Usage request failed (${response.status})`);
+  return parseCodexUsage(await response.json());
+};
 const readAuth = async () => {
   const environmentToken = stringOrNull(process.env.CHATGPT_ACCESS_TOKEN);
   if (environmentToken) {
@@ -70,28 +87,27 @@ const readAuth = async () => {
     accountId: stringOrNull(openai.accountId) ?? (access ? accountIdFromToken(access) : void 0)
   };
 };
-const getCodexUsage = async () => {
+const getLocalCodexUsage = async () => {
   const auth = await readAuth();
   if (!auth.access) throw new Error("Connect ChatGPT from /connect first");
-  const headers = new Headers({
-    Authorization: `Bearer ${auth.access}`,
-    Accept: "application/json"
-  });
-  if (auth.accountId) headers.set("ChatGPT-Account-ID", auth.accountId);
-  const response = await fetch(USAGE_URL, {
-    headers,
-    signal: AbortSignal.timeout(1e4)
-  });
-  if (response.status === 401 || response.status === 403) {
-    throw new Error("ChatGPT session expired; reconnect from /connect");
+  return fetchCodexUsage(auth.access, auth.accountId);
+};
+const isRpcMethodError = (error) => record(error) && typeof error.type === "string" && !error.type.startsWith("rpc.");
+const getCodexUsage = async (client) => {
+  if (client) {
+    try {
+      return await client.rpc(MultiUsageRpc).codexUsage({});
+    } catch (error) {
+      if (isRpcMethodError(error)) throw error;
+    }
   }
-  if (!response.ok) throw new Error(`Usage request failed (${response.status})`);
-  return parseCodexUsage(await response.json());
+  return getLocalCodexUsage();
 };
 export {
   USAGE_URL,
   accountIdFromToken,
   emptyCodexUsage,
+  fetchCodexUsage,
   getCodexUsage,
   parseCodexUsage
 };

@@ -2,6 +2,7 @@ import { describe, it } from "node:test"
 import assert from "node:assert/strict"
 import server from "../dist/index.js"
 import tui from "../dist/tui.js"
+import { MultiUsageRpc } from "../dist/rpc.js"
 
 describe("plugin entrypoints", () => {
   it("exposes the native v2 server lifecycle at the package root", () => {
@@ -13,5 +14,10 @@ describe("plugin entrypoints", () => {
   it("exposes the v2 CLI lifecycle from ./tui", () => {
     assert.equal(tui.id, "opencode.multi-usage.tui")
     assert.equal(typeof tui.setup, "function")
+  })
+
+  it("exposes the shared usage RPC from ./rpc", () => {
+    assert.equal(MultiUsageRpc.id, "multi-usage")
+    assert.equal(typeof MultiUsageRpc.methods.codexUsage, "object")
   })
 })
