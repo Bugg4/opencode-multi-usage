@@ -64,11 +64,14 @@ export function QuotaRow(props: {
   theme: Accessor<UsageTheme>
   requestRender: () => void
 }) {
-  const [resetOpen, setResetOpen] = createSignal(false)
+  const [resetOpen, setResetOpen] = createSignal<boolean | undefined>(undefined)
   const hasReset = () =>
     props.resetAt !== null && props.resetAt !== undefined && props.resetAt > Date.now()
+  const autoOpen = () =>
+    hasReset() && (props.remainingPercent === null || props.remainingPercent <= 0)
+  const isResetOpen = () => resetOpen() ?? autoOpen()
   const toggleReset = () => {
-    setResetOpen((value) => !value)
+    setResetOpen(!isResetOpen())
     props.requestRender()
   }
   const resetLabel = () =>
@@ -107,11 +110,11 @@ export function QuotaRow(props: {
     <box>
       <box id={`usage-quota-${props.label}`} flexDirection="row" gap={1} onMouseDown={toggleReset}>
         <text flexShrink={0} fg={props.theme().muted}>
-          {resetOpen() ? "▼" : "▶"}
+          {isResetOpen() ? "▼" : "▶"}
         </text>
         <SummaryText />
       </box>
-      <box paddingLeft={2} height={resetOpen() ? "auto" : 0} visible={resetOpen()}>
+      <box paddingLeft={2} height={isResetOpen() ? "auto" : 0} visible={isResetOpen()}>
         <Row theme={props.theme}>Resets: {resetLabel()}</Row>
       </box>
     </box>

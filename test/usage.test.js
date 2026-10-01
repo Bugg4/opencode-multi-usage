@@ -2,6 +2,7 @@ import { describe, it } from "node:test"
 import assert from "node:assert/strict"
 import {
   accountIdFromToken,
+  codexSummary,
   fetchCodexUsage,
   getCodexUsage,
   parseCodexUsage,
@@ -46,6 +47,53 @@ describe("Codex usage", () => {
     const usage = parseCodexUsage({ plan_type: "team" })
     assert.equal(usage.primary, null)
     assert.equal(usage.secondary, null)
+  })
+
+  it("communicates the reset ETA when the primary quota is exhausted", () => {
+    const now = 1_790_000_000_000
+    const resetAt = (now + 2 * 3_600_000) / 1000
+    const usage = {
+      plan: "team",
+      allowed: false,
+      limitReached: true,
+      primary: { usedPercent: 100, remainingPercent: 0, windowSeconds: 18_000, resetAt },
+      secondary: null,
+    }
+    assert.equal(codexSummary(usage, now), "(5h 0% left, resets in 2h)")
+  })
+
+  it("communicates the reset ETA when a window has no percentage", () => {
+    const now = 1_790_000_000_000
+    const resetAt = (now + 2 * 3_600_000) / 1000
+    const usage = {
+      plan: "team",
+      allowed: null,
+      limitReached: null,
+      primary: { usedPercent: null, remainingPercent: null, windowSeconds: 18_000, resetAt },
+      secondary: null,
+    }
+    assert.equal(codexSummary(usage, now), "(5h resets in 2h)")
+  })
+
+  it("falls back to the secondary window before reporting unavailable", () => {
+    const usage = {
+      plan: "plus",
+      allowed: true,
+      limitReached: false,
+      primary: { usedPercent: null, remainingPercent: null, windowSeconds: 18_000, resetAt: null },
+      secondary: {
+        usedPercent: 50,
+        remainingPercent: 50,
+        windowSeconds: 604_800,
+        resetAt: null,
+      },
+    }
+    assert.equal(codexSummary(usage), "(1w 50% left)")
+  })
+
+  it("reports a reached limit instead of unavailable when windows are missing", () => {
+    const usage = { plan: null, allowed: false, limitReached: true, primary: null, secondary: null }
+    assert.equal(codexSummary(usage), "(limit reached)")
   })
 
   it("extracts direct and nested account IDs", () => {

@@ -1,27 +1,14 @@
 /** @jsxImportSource @opentui/solid */
 import { Show } from "solid-js"
-import type { CodexUsage, WindowUsage } from "./codex.js"
-import { Empty, pct, PlanRow, QuotaRow, Row, Section, type UsageViewProps } from "../ui.js"
-
-const windowLabel = (window: WindowUsage, fallback: string): string => {
-  if (window.windowSeconds === null) return fallback
-  const hours = Math.max(1, Math.round(window.windowSeconds / 3600))
-  const days = Math.round(hours / 24)
-  if (hours >= 24 && days % 7 === 0) return `${days / 7}w`
-  return hours >= 24 ? `${days}d` : `${hours}h`
-}
+import { codexSummary, windowLabel, type CodexUsage, type WindowUsage } from "./codex.js"
+import { Empty, PlanRow, QuotaRow, Row, Section, type UsageViewProps } from "../ui.js"
 
 export function CodexView(props: UsageViewProps<CodexUsage>) {
   const shortSummary = () => {
     const usage = props.usage()
     if (!usage && props.loading()) return "(loading)"
-    if (!usage || usage.error) return "(unavailable)"
-    if (usage.primary?.remainingPercent !== null && usage.primary?.remainingPercent !== undefined) {
-      return `(5h ${pct(usage.primary.remainingPercent)} left)`
-    }
-    return usage.secondary
-      ? `(${windowLabel(usage.secondary, "wk")} ${pct(usage.secondary.remainingPercent)} left)`
-      : "(unavailable)"
+    if (!usage) return "(unavailable)"
+    return codexSummary(usage)
   }
   const statusColor = () => {
     const usage = props.usage()
@@ -66,7 +53,12 @@ export function CodexView(props: UsageViewProps<CodexUsage>) {
         <PlanRow plan={props.usage()!.plan} theme={props.theme} />
         <Show
           when={props.usage()!.primary ?? props.usage()!.secondary}
-          fallback={<Empty theme={props.theme} />}
+          fallback={
+            <Empty
+              message={props.usage()!.limitReached === true ? "Limit reached" : undefined}
+              theme={props.theme}
+            />
+          }
         >
           <Show when={props.usage()!.primary}>
             {(window) => <WindowRow label="Primary" window={window()} />}

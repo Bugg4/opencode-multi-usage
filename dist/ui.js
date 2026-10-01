@@ -62,10 +62,12 @@ function PlanRow(props) {
   });
 }
 function QuotaRow(props) {
-  const [resetOpen, setResetOpen] = createSignal(false);
+  const [resetOpen, setResetOpen] = createSignal(void 0);
   const hasReset = () => props.resetAt !== null && props.resetAt !== void 0 && props.resetAt > Date.now();
+  const autoOpen = () => hasReset() && (props.remainingPercent === null || props.remainingPercent <= 0);
+  const isResetOpen = () => resetOpen() ?? autoOpen();
   const toggleReset = () => {
-    setResetOpen((value) => !value);
+    setResetOpen(!isResetOpen());
     props.requestRender();
   };
   const resetLabel = () => new Date(props.resetAt).toLocaleString([], {
@@ -143,7 +145,7 @@ function QuotaRow(props) {
     _$setProp(_el$19, "gap", 1);
     _$setProp(_el$19, "onMouseDown", toggleReset);
     _$setProp(_el$20, "flexShrink", 0);
-    _$insert(_el$20, () => resetOpen() ? "\u25BC" : "\u25B6");
+    _$insert(_el$20, () => isResetOpen() ? "\u25BC" : "\u25B6");
     _$insert(_el$19, _$createComponent(SummaryText, {}), null);
     _$setProp(_el$21, "paddingLeft", 2);
     _$insert(_el$21, _$createComponent(Row, {
@@ -155,7 +157,7 @@ function QuotaRow(props) {
       }
     }));
     _$effect((_p$) => {
-      var _v$3 = `usage-quota-${props.label}`, _v$4 = props.theme().muted, _v$5 = resetOpen() ? "auto" : 0, _v$6 = resetOpen();
+      var _v$3 = `usage-quota-${props.label}`, _v$4 = props.theme().muted, _v$5 = isResetOpen() ? "auto" : 0, _v$6 = isResetOpen();
       _v$3 !== _p$.e && (_p$.e = _$setProp(_el$19, "id", _v$3, _p$.e));
       _v$4 !== _p$.t && (_p$.t = _$setProp(_el$20, "fg", _v$4, _p$.t));
       _v$5 !== _p$.a && (_p$.a = _$setProp(_el$21, "height", _v$5, _p$.a));

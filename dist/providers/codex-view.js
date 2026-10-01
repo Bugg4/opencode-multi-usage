@@ -5,23 +5,14 @@ import { createElement as _$createElement } from "@opentui/solid";
 import { createComponent as _$createComponent } from "@opentui/solid";
 import { memo as _$memo } from "@opentui/solid";
 import { Show } from "solid-js";
-import { Empty, pct, PlanRow, QuotaRow, Row, Section } from "../ui.js";
-const windowLabel = (window, fallback) => {
-  if (window.windowSeconds === null) return fallback;
-  const hours = Math.max(1, Math.round(window.windowSeconds / 3600));
-  const days = Math.round(hours / 24);
-  if (hours >= 24 && days % 7 === 0) return `${days / 7}w`;
-  return hours >= 24 ? `${days}d` : `${hours}h`;
-};
+import { codexSummary, windowLabel } from "./codex.js";
+import { Empty, PlanRow, QuotaRow, Row, Section } from "../ui.js";
 function CodexView(props) {
   const shortSummary = () => {
     const usage = props.usage();
     if (!usage && props.loading()) return "(loading)";
-    if (!usage || usage.error) return "(unavailable)";
-    if (usage.primary?.remainingPercent !== null && usage.primary?.remainingPercent !== void 0) {
-      return `(5h ${pct(usage.primary.remainingPercent)} left)`;
-    }
-    return usage.secondary ? `(${windowLabel(usage.secondary, "wk")} ${pct(usage.secondary.remainingPercent)} left)` : "(unavailable)";
+    if (!usage) return "(unavailable)";
+    return codexSummary(usage);
   };
   const statusColor = () => {
     const usage = props.usage();
@@ -94,6 +85,9 @@ function CodexView(props) {
             },
             get fallback() {
               return _$createComponent(Empty, {
+                get message() {
+                  return props.usage().limitReached === true ? "Limit reached" : void 0;
+                },
                 get theme() {
                   return props.theme;
                 }

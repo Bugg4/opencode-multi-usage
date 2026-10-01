@@ -83,6 +83,45 @@ export const parseCodexUsage = (value: unknown): CodexUsage => {
   }
 }
 
+export const windowLabel = (window: WindowUsage, fallback: string): string => {
+  if (window.windowSeconds === null) return fallback
+  const hours = Math.max(1, Math.round(window.windowSeconds / 3600))
+  const days = Math.round(hours / 24)
+  if (hours >= 24 && days % 7 === 0) return `${days / 7}w`
+  return hours >= 24 ? `${days}d` : `${hours}h`
+}
+
+const resetEta = (window: WindowUsage, now: number): string | null => {
+  if (window.resetAt === null) return null
+  const resetAt = window.resetAt * 1000
+  if (resetAt <= now) return null
+  const minutes = Math.max(1, Math.ceil((resetAt - now) / 60_000))
+  if (minutes < 60) return `resets in ${minutes}m`
+  const hours = Math.ceil(minutes / 60)
+  return hours < 24 ? `resets in ${hours}h` : `resets in ${Math.ceil(hours / 24)}d`
+}
+
+const windowSummary = (window: WindowUsage, fallback: string, now: number): string => {
+  const label = windowLabel(window, fallback)
+  const eta = resetEta(window, now)
+  if (window.remainingPercent === null) {
+    return eta ? `(${label} ${eta})` : `(${label} --% left)`
+  }
+  const left = `${Math.round(window.remainingPercent)}% left`
+  return eta && window.remainingPercent <= 0 ? `(${label} ${left}, ${eta})` : `(${label} ${left})`
+}
+
+export const codexSummary = (usage: CodexUsage, now = Date.now()): string => {
+  if (usage.error) return "(unavailable)"
+  const primary = usage.primary
+  const secondary = usage.secondary
+  if (primary && primary.remainingPercent !== null) return windowSummary(primary, "5h", now)
+  if (secondary && secondary.remainingPercent !== null) return windowSummary(secondary, "wk", now)
+  if (primary) return windowSummary(primary, "5h", now)
+  if (secondary) return windowSummary(secondary, "wk", now)
+  return usage.limitReached === true ? "(limit reached)" : "(unavailable)"
+}
+
 export const fetchCodexUsage = async (access: string, accountId?: string): Promise<CodexUsage> => {
   const headers = new Headers({
     Authorization: `Bearer ${access}`,
