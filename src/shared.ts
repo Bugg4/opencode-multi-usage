@@ -21,6 +21,9 @@ export const readJson = async (file: string): Promise<unknown> =>
 
 export const opencodeDataFile = (name: string): string => path.join(dataHome(), "opencode", name)
 
+export const isDeclaredRpcError = (error: unknown): boolean =>
+  record(error) && typeof error.type === "string" && !error.type.startsWith("rpc.")
+
 export const errorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message
   if (record(error) && typeof error.message === "string" && error.message.length > 0) {

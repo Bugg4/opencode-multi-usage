@@ -35,7 +35,9 @@ const providers = {
   commandcode: {
     id: "commandcode",
     defaultRefreshInterval: "5m",
-    getUsage: () => getCommandCodeUsage(),
+    getUsage: (client) => getCommandCodeUsage({
+      client
+    }),
     errorUsage: emptyCommandCodeUsage,
     View: CommandCodeView
   }

@@ -92,14 +92,162 @@ export declare const MultiUsageRpc: {
             };
             readonly errors: {
                 readonly unavailable: {
-                    readonly type: "object";
-                    readonly properties: {
-                        readonly reason: {
-                            readonly type: "string";
+                    type: string;
+                    properties: {
+                        reason: {
+                            type: string;
                         };
                     };
-                    readonly required: readonly ["reason"];
-                    readonly additionalProperties: false;
+                    required: string[];
+                    additionalProperties: boolean;
+                };
+            };
+        };
+        readonly commandCodeUsage: {
+            readonly input: {
+                readonly type: "object";
+                readonly additionalProperties: false;
+            };
+            readonly output: {
+                type: string;
+                properties: {
+                    plan: {
+                        anyOf: {
+                            type: string;
+                        }[];
+                    };
+                    status: {
+                        anyOf: {
+                            type: string;
+                        }[];
+                    };
+                    daysLeft: {
+                        anyOf: {
+                            type: string;
+                        }[];
+                    };
+                    monthlyRemaining: {
+                        anyOf: {
+                            type: string;
+                        }[];
+                    };
+                    extraRemaining: {
+                        anyOf: {
+                            type: string;
+                        }[];
+                    };
+                    totalRemaining: {
+                        anyOf: {
+                            type: string;
+                        }[];
+                    };
+                    usagePercent: {
+                        anyOf: {
+                            type: string;
+                        }[];
+                    };
+                    periodCount: {
+                        anyOf: {
+                            type: string;
+                        }[];
+                    };
+                    periodCost: {
+                        anyOf: {
+                            type: string;
+                        }[];
+                    };
+                    fiveHour: {
+                        anyOf: ({
+                            type: string;
+                            properties: {
+                                used: {
+                                    anyOf: {
+                                        type: string;
+                                    }[];
+                                };
+                                cap: {
+                                    anyOf: {
+                                        type: string;
+                                    }[];
+                                };
+                                resetAt: {
+                                    anyOf: {
+                                        type: string;
+                                    }[];
+                                };
+                            };
+                            required: string[];
+                            additionalProperties: boolean;
+                        } | {
+                            type: string;
+                        })[];
+                    };
+                    weekly: {
+                        anyOf: ({
+                            type: string;
+                            properties: {
+                                used: {
+                                    anyOf: {
+                                        type: string;
+                                    }[];
+                                };
+                                cap: {
+                                    anyOf: {
+                                        type: string;
+                                    }[];
+                                };
+                                resetAt: {
+                                    anyOf: {
+                                        type: string;
+                                    }[];
+                                };
+                            };
+                            required: string[];
+                            additionalProperties: boolean;
+                        } | {
+                            type: string;
+                        })[];
+                    };
+                    monthly: {
+                        anyOf: ({
+                            type: string;
+                            properties: {
+                                used: {
+                                    anyOf: {
+                                        type: string;
+                                    }[];
+                                };
+                                cap: {
+                                    anyOf: {
+                                        type: string;
+                                    }[];
+                                };
+                                resetAt: {
+                                    anyOf: {
+                                        type: string;
+                                    }[];
+                                };
+                            };
+                            required: string[];
+                            additionalProperties: boolean;
+                        } | {
+                            type: string;
+                        })[];
+                    };
+                };
+                required: string[];
+                additionalProperties: boolean;
+            };
+            readonly errors: {
+                readonly unavailable: {
+                    type: string;
+                    properties: {
+                        reason: {
+                            type: string;
+                        };
+                    };
+                    required: string[];
+                    additionalProperties: boolean;
                 };
             };
         };

@@ -1,5 +1,6 @@
 import { Plugin } from "@opencode/plugin"
 import { accountIdFromToken, fetchCodexUsage } from "./providers/codex.js"
+import { getCommandCodeUsage } from "./providers/commandcode.js"
 import { MultiUsageRpc } from "./rpc.js"
 import { stringOrNull } from "./shared.js"
 
@@ -25,6 +26,30 @@ export default Plugin.define({
           accountIdFromToken(credential.access)
         try {
           return await fetchCodexUsage(credential.access, accountId)
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : "Usage request failed"
+          return context.error("unavailable", reason, { reason })
+        }
+      },
+      commandCodeUsage: async (_input, context) => {
+        let preferred: string[] = []
+        try {
+          const connection = await ctx.integration.connection.active("commandcode")
+          const credential = connection
+            ? await ctx.integration.connection.resolve(connection)
+            : undefined
+          const token =
+            credential?.type === "key"
+              ? credential.key
+              : credential?.type === "oauth"
+                ? credential.access
+                : undefined
+          if (token) preferred = [token]
+        } catch {
+          // The Command Code provider plugin is not registered; local fallbacks still apply.
+        }
+        try {
+          return await getCommandCodeUsage({ preferredAuth: preferred })
         } catch (error) {
           const reason = error instanceof Error ? error.message : "Usage request failed"
           return context.error("unavailable", reason, { reason })

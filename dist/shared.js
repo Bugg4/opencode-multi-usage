@@ -7,6 +7,7 @@ const booleanOrNull = (value) => typeof value === "boolean" ? value : null;
 const dataHome = () => process.env.XDG_DATA_HOME ?? path.join(process.env.HOME ?? "", ".local", "share");
 const readJson = async (file) => JSON.parse(await readFile(file, "utf8"));
 const opencodeDataFile = (name) => path.join(dataHome(), "opencode", name);
+const isDeclaredRpcError = (error) => record(error) && typeof error.type === "string" && !error.type.startsWith("rpc.");
 const errorMessage = (error) => {
   if (error instanceof Error) return error.message;
   if (record(error) && typeof error.message === "string" && error.message.length > 0) {
@@ -18,6 +19,7 @@ export {
   booleanOrNull,
   dataHome,
   errorMessage,
+  isDeclaredRpcError,
   numberOrNull,
   opencodeDataFile,
   readJson,

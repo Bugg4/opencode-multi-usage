@@ -1,6 +1,7 @@
 import type { Context } from "@opencode/plugin/tui/context"
 import { MultiUsageRpc } from "../rpc.js"
 import {
+  isDeclaredRpcError,
   opencodeDataFile,
   booleanOrNull,
   numberOrNull,
@@ -125,15 +126,12 @@ const getLocalCodexUsage = async (): Promise<CodexUsage> => {
   return fetchCodexUsage(auth.access, auth.accountId)
 }
 
-const isRpcMethodError = (error: unknown): boolean =>
-  record(error) && typeof error.type === "string" && !error.type.startsWith("rpc.")
-
 export const getCodexUsage = async (client?: TuiClient): Promise<CodexUsage> => {
   if (client) {
     try {
       return (await client.rpc(MultiUsageRpc).codexUsage({})) as CodexUsage
     } catch (error) {
-      if (isRpcMethodError(error)) throw error
+      if (isDeclaredRpcError(error)) throw error
       // The server plugin is not loaded; fall back to local credentials.
     }
   }

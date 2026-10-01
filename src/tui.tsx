@@ -45,7 +45,7 @@ const providers = {
   commandcode: {
     id: "commandcode",
     defaultRefreshInterval: "5m",
-    getUsage: () => getCommandCodeUsage(),
+    getUsage: (client?: TuiClient) => getCommandCodeUsage({ client }),
     errorUsage: emptyCommandCodeUsage,
     View: CommandCodeView,
   } satisfies Provider<Awaited<ReturnType<typeof getCommandCodeUsage>>>,

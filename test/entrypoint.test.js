@@ -19,5 +19,6 @@ describe("plugin entrypoints", () => {
   it("exposes the shared usage RPC from ./rpc", () => {
     assert.equal(MultiUsageRpc.id, "multi-usage")
     assert.equal(typeof MultiUsageRpc.methods.codexUsage, "object")
+    assert.equal(typeof MultiUsageRpc.methods.commandCodeUsage, "object")
   })
 })

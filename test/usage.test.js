@@ -8,6 +8,7 @@ import {
 } from "../dist/providers/codex.js"
 import { parseGoUsage, parseGoWindow } from "../dist/providers/opencode-go.js"
 import {
+  commandCodeAuthCandidates,
   getCommandCodeUsage,
   parseCommandCodeUsage,
   parseCommandCodeWindow,
@@ -200,6 +201,88 @@ describe("CommandCode usage", () => {
     assert.equal(usage.plan, null)
     assert.equal(usage.usagePercent, null)
     assert.equal(parseCommandCodeWindow(null), null)
+  })
+
+  it("tries the explicit usage key, then live credentials, then local fallbacks", async () => {
+    const previous = process.env.COMMANDCODE_USAGE_API_KEY
+    process.env.COMMANDCODE_USAGE_API_KEY = "usage-key"
+    try {
+      const candidates = await commandCodeAuthCandidates(["live-key"])
+      assert.deepEqual(candidates.slice(0, 2), ["usage-key", "live-key"])
+    } finally {
+      if (previous === undefined) delete process.env.COMMANDCODE_USAGE_API_KEY
+      else process.env.COMMANDCODE_USAGE_API_KEY = previous
+    }
+  })
+
+  it("uses the server RPC when the server plugin is available", async () => {
+    const client = {
+      rpc: () => ({
+        commandCodeUsage: async () => ({
+          plan: "GOAT",
+          status: "active",
+          daysLeft: 12,
+          monthlyRemaining: 61.5,
+          extraRemaining: 0,
+          totalRemaining: 61.5,
+          usagePercent: 12.14,
+          periodCount: 42,
+          periodCost: 8.5,
+          fiveHour: null,
+          weekly: null,
+          monthly: { used: 3.06, cap: 70, resetAt: 1_789_600_000 },
+        }),
+      }),
+    }
+    const usage = await getCommandCodeUsage({ client })
+    assert.equal(usage.plan, "GOAT")
+    assert.equal(usage.totalRemaining, 61.5)
+  })
+
+  it("propagates declared RPC errors instead of local credentials", async () => {
+    const client = {
+      rpc: () => ({
+        commandCodeUsage: async () => {
+          throw { type: "unavailable", message: "Connect Command Code from /connect first" }
+        },
+      }),
+    }
+    await assert.rejects(getCommandCodeUsage({ client }), (error) => {
+      assert.equal(error.type, "unavailable")
+      assert.match(error.message, /Connect Command Code from \/connect first/)
+      return true
+    })
+  })
+
+  it("falls back to local credentials when the RPC is missing", async () => {
+    const client = {
+      rpc: () => ({
+        commandCodeUsage: async () => {
+          throw { type: "rpc.method_not_found", message: "Method not found" }
+        },
+      }),
+    }
+    const fetcher = async (input, init) => {
+      const url = new URL(input)
+      assert.equal(new Headers(init?.headers).get("authorization"), "Bearer cli-key")
+      if (url.pathname === "/alpha/whoami") return Response.json({ org: { id: "org-1" } })
+      if (url.pathname === "/alpha/billing/credits") {
+        return Response.json({ credits: { monthlyCredits: 5 } })
+      }
+      if (url.pathname === "/alpha/billing/subscriptions") {
+        return Response.json({ data: { planId: "individual-pro" } })
+      }
+      if (url.pathname === "/alpha/usage/summary") return Response.json({ totalCount: 3 })
+      return new Response(null, { status: 404 })
+    }
+
+    const usage = await getCommandCodeUsage({
+      client,
+      authCandidates: ["cli-key"],
+      fetcher,
+    })
+    assert.equal(usage.plan, "Pro")
+    assert.equal(usage.totalRemaining, 5)
   })
 
   it("falls back when a Provider API key cannot access subscription usage", async () => {

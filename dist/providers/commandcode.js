@@ -1,5 +1,13 @@
 import path from "node:path";
-import { numberOrNull, opencodeDataFile, readJson, record, stringOrNull } from "../shared.js";
+import { MultiUsageRpc } from "../rpc.js";
+import {
+  isDeclaredRpcError,
+  numberOrNull,
+  opencodeDataFile,
+  readJson,
+  record,
+  stringOrNull
+} from "../shared.js";
 const DEFAULT_BASE_URL = "https://api.commandcode.ai";
 const CC_VERSION = "1.54.0";
 const USER_AGENT = "cli";
@@ -82,6 +90,17 @@ const readAuth = async () => {
   }
   return keys;
 };
+const commandCodeAuthCandidates = async (preferred = []) => {
+  const keys = [];
+  const add = (value) => {
+    const key = stringOrNull(value);
+    if (key && !keys.includes(key)) keys.push(key);
+  };
+  add(process.env.COMMANDCODE_USAGE_API_KEY);
+  for (const key of preferred) add(key);
+  for (const key of await readAuth()) add(key);
+  return keys;
+};
 const commandCodeBaseUrl = () => stringOrNull(process.env.COMMANDCODE_API_URL) ?? DEFAULT_BASE_URL;
 const commandCodeHeaders = (key) => ({
   Authorization: `Bearer ${key}`,
@@ -154,9 +173,9 @@ const getCommandCodeUsageWithKey = async (key, fetcher) => {
   );
   return parseCommandCodeUsage(creditsRaw, subRaw, summaryRaw);
 };
-const getCommandCodeUsage = async (dependencies = {}) => {
+const getLocalCommandCodeUsage = async (dependencies) => {
   const fetcher = dependencies.fetcher ?? fetch;
-  const keys = dependencies.authCandidates ?? await readAuth();
+  const keys = dependencies.authCandidates ?? await commandCodeAuthCandidates(dependencies.preferredAuth ?? []);
   if (keys.length === 0) {
     throw new Error("Run `cmd auth login` or set COMMANDCODE_USAGE_API_KEY first");
   }
@@ -171,12 +190,23 @@ const getCommandCodeUsage = async (dependencies = {}) => {
   }
   throw rejected ?? new Error("No CommandCode credential can access usage; run `cmd auth login` first");
 };
+const getCommandCodeUsage = async (dependencies = {}) => {
+  if (dependencies.client) {
+    try {
+      return await dependencies.client.rpc(MultiUsageRpc).commandCodeUsage({});
+    } catch (error) {
+      if (isDeclaredRpcError(error)) throw error;
+    }
+  }
+  return getLocalCommandCodeUsage(dependencies);
+};
 export {
   CC_VERSION,
   DEFAULT_BASE_URL,
   PLAN_CREDITS,
   PLAN_NAMES,
   USER_AGENT,
+  commandCodeAuthCandidates,
   commandCodeBaseUrl,
   commandCodeHeaders,
   emptyCommandCodeUsage,

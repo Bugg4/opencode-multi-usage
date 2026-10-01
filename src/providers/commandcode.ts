@@ -1,5 +1,16 @@
+import type { Context } from "@opencode/plugin/tui/context"
 import path from "node:path"
-import { numberOrNull, opencodeDataFile, readJson, record, stringOrNull } from "../shared.js"
+import { MultiUsageRpc } from "../rpc.js"
+import {
+  isDeclaredRpcError,
+  numberOrNull,
+  opencodeDataFile,
+  readJson,
+  record,
+  stringOrNull,
+} from "../shared.js"
+
+export type TuiClient = Context["client"]
 
 export const DEFAULT_BASE_URL = "https://api.commandcode.ai"
 export const CC_VERSION = "1.54.0"
@@ -126,6 +137,25 @@ const readAuth = async (): Promise<string[]> => {
   return keys
 }
 
+/**
+ * Credential candidates in trial order: the explicit usage key, then preferred
+ * keys such as the live OpenCode V2 credential, then the local fallbacks.
+ */
+export const commandCodeAuthCandidates = async (
+  preferred: readonly string[] = [],
+): Promise<string[]> => {
+  const keys: string[] = []
+  const add = (value: unknown) => {
+    const key = stringOrNull(value)
+    if (key && !keys.includes(key)) keys.push(key)
+  }
+
+  add(process.env.COMMANDCODE_USAGE_API_KEY)
+  for (const key of preferred) add(key)
+  for (const key of await readAuth()) add(key)
+  return keys
+}
+
 export const commandCodeBaseUrl = (): string =>
   stringOrNull(process.env.COMMANDCODE_API_URL) ?? DEFAULT_BASE_URL
 
@@ -157,6 +187,8 @@ const fetchJson = async (key: string, suffix: string, fetcher: typeof fetch): Pr
 export type CommandCodeUsageDependencies = {
   fetcher?: typeof fetch
   authCandidates?: readonly string[]
+  preferredAuth?: readonly string[]
+  client?: TuiClient
 }
 
 export const parseCommandCodeUsage = (
@@ -226,11 +258,13 @@ const getCommandCodeUsageWithKey = async (
   return parseCommandCodeUsage(creditsRaw, subRaw, summaryRaw)
 }
 
-export const getCommandCodeUsage = async (
-  dependencies: CommandCodeUsageDependencies = {},
+const getLocalCommandCodeUsage = async (
+  dependencies: CommandCodeUsageDependencies,
 ): Promise<CommandCodeUsage> => {
   const fetcher = dependencies.fetcher ?? fetch
-  const keys = dependencies.authCandidates ?? (await readAuth())
+  const keys =
+    dependencies.authCandidates ??
+    (await commandCodeAuthCandidates(dependencies.preferredAuth ?? []))
   if (keys.length === 0) {
     throw new Error("Run `cmd auth login` or set COMMANDCODE_USAGE_API_KEY first")
   }
@@ -247,4 +281,18 @@ export const getCommandCodeUsage = async (
   throw (
     rejected ?? new Error("No CommandCode credential can access usage; run `cmd auth login` first")
   )
+}
+
+export const getCommandCodeUsage = async (
+  dependencies: CommandCodeUsageDependencies = {},
+): Promise<CommandCodeUsage> => {
+  if (dependencies.client) {
+    try {
+      return (await dependencies.client.rpc(MultiUsageRpc).commandCodeUsage({})) as CommandCodeUsage
+    } catch (error) {
+      if (isDeclaredRpcError(error)) throw error
+      // The server plugin is not loaded; fall back to local credentials.
+    }
+  }
+  return getLocalCommandCodeUsage(dependencies)
 }

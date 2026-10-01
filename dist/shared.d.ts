@@ -5,5 +5,6 @@ export declare const booleanOrNull: (value: unknown) => boolean | null;
 export declare const dataHome: () => string;
 export declare const readJson: (file: string) => Promise<unknown>;
 export declare const opencodeDataFile: (name: string) => string;
+export declare const isDeclaredRpcError: (error: unknown) => boolean;
 export declare const errorMessage: (error: unknown) => string;
 //# sourceMappingURL=shared.d.ts.map

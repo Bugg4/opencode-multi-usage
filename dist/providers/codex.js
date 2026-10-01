@@ -1,5 +1,6 @@
 import { MultiUsageRpc } from "../rpc.js";
 import {
+  isDeclaredRpcError,
   opencodeDataFile,
   booleanOrNull,
   numberOrNull,
@@ -92,13 +93,12 @@ const getLocalCodexUsage = async () => {
   if (!auth.access) throw new Error("Connect ChatGPT from /connect first");
   return fetchCodexUsage(auth.access, auth.accountId);
 };
-const isRpcMethodError = (error) => record(error) && typeof error.type === "string" && !error.type.startsWith("rpc.");
 const getCodexUsage = async (client) => {
   if (client) {
     try {
       return await client.rpc(MultiUsageRpc).codexUsage({});
     } catch (error) {
-      if (isRpcMethodError(error)) throw error;
+      if (isDeclaredRpcError(error)) throw error;
     }
   }
   return getLocalCodexUsage();

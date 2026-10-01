@@ -1,5 +1,6 @@
 import { Plugin } from "@opencode/plugin";
 import { accountIdFromToken, fetchCodexUsage } from "./providers/codex.js";
+import { getCommandCodeUsage } from "./providers/commandcode.js";
 import { MultiUsageRpc } from "./rpc.js";
 import { stringOrNull } from "./shared.js";
 var src_default = Plugin.define({
@@ -17,6 +18,22 @@ var src_default = Plugin.define({
         const accountId = stringOrNull(metadata.accountID) ?? stringOrNull(metadata.accountId) ?? accountIdFromToken(credential.access);
         try {
           return await fetchCodexUsage(credential.access, accountId);
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : "Usage request failed";
+          return context.error("unavailable", reason, { reason });
+        }
+      },
+      commandCodeUsage: async (_input, context) => {
+        let preferred = [];
+        try {
+          const connection = await ctx.integration.connection.active("commandcode");
+          const credential = connection ? await ctx.integration.connection.resolve(connection) : void 0;
+          const token = credential?.type === "key" ? credential.key : credential?.type === "oauth" ? credential.access : void 0;
+          if (token) preferred = [token];
+        } catch {
+        }
+        try {
+          return await getCommandCodeUsage({ preferredAuth: preferred });
         } catch (error) {
           const reason = error instanceof Error ? error.message : "Usage request failed";
           return context.error("unavailable", reason, { reason });
